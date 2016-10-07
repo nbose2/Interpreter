@@ -32,25 +32,32 @@ open Str;;      (* for split *)
    widely used commercial packages, but not in the core libraries. *)
 let compose f g x = f (g x);;
 
+(* A nonterminal may have several productions 
+   For example, consider the nonterminal SL. It has two productions: 
+     (1) SL -> S SL
+     (2) SL -> EPSILON 
+   A symbol_production contains a nonterminal followed by all possible
+   right-hand sides of the production resulting from the nonterminal.
+   In our example, these would be
+     (1) S SL
+     (2) EPSILON
+   Each right-hand side of the production is a list of strings. Since
+   the second part of symbol_production is a list of right-hand sides 
+   of productions it is a list of a list of strings. *) 
 type symbol_productions = (string * string list list);;
+(*                         nt     * list of productions (more specifically, a production's right-hand side) *)
+
+(* A grammar is a collection of productions. Therefore, it can be composed
+   of a list of symbol_productions, one for each nonterminal. *)
 type grammar = symbol_productions list;;
+
+(* A parse_table is a collection of nonterminals paired with the predict
+   sets of each of its productions. Therefore, a parse_table is a list
+   of nonterminals and their predict_sets. *)
 type parse_table = (string * (string list * string list) list) list;;
 (*                  nt        predict_set   rhs *)
 
-let calc_gram : grammar =
-  [ ("P",  [["SL"; "$$"]])
-  ; ("SL", [["S"; "SL"]; []])
-  ; ("S",  [["id"; ":="; "E"]; ["read"; "id"]; ["write"; "E"]; ["if"; "R"; "SL"; "fi"]; ["do"; "SL"; "od"]; ["check"; "R"]])
-  ; ("R",  [["E"; "ET"]])
-  ; ("E",  [["T"; "TT"]])
-  ; ("T",  [["F"; "FT"]])
-  ; ("TT", [["ao"; "T"; "TT"]; []])
-  ; ("FT", [["mo"; "F"; "FT"]; []])
-  ; ("ao", [["+"]; ["-"]])
-  ; ("mo", [["*"]; ["/"]])
-  ; ("F",  [["id"]; ["num"]; ["("; "E"; ")"]])
-  ];;
-
+(* The Extended Calculator Grammar that we will be using for this project. *)
 let ecg : grammar =
   [ ("P",  [["SL"; "$$"]])
   ; ("SL", [["S"; "SL"]; []])
@@ -95,6 +102,7 @@ let rec unique l =
                       then unique (b :: rest)
                       else a :: unique (b :: rest);;
 
+(* Sorts lists and removes duplicates from the list. *)
 let unique_sort l = unique (sort l);;
 
 (* Return all individual productions in grammar. *)
@@ -444,6 +452,7 @@ let primes_prog = "
          cp := cp + 1
      od";;
 
+
 type parse_action = PA_error | PA_prediction of string list;;
 (* Double-index to find prediction (list of RHS symbols) for
    nonterminal nt and terminal t.
@@ -522,8 +531,6 @@ let parse (parse_tab:parse_table) (program:string) : parse_tree =
                 end in
   helper [PS_sym(start_symbol gram)] (tokenize program) [];;
 
-let cg_parse_table = get_parse_table calc_gram;;
-
 let ecg_parse_table = get_parse_table ecg;;
 
 (*******************************************************************
@@ -549,6 +556,7 @@ and ast_e =
 | AST_id of string
 | AST_num of string;;
 
+(* Translates parse tree to syntax tree. *)
 let rec ast_ize_P (p:parse_tree) : ast_sl =
   (* your code should replace the following line *)
   []
