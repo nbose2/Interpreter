@@ -1,0 +1,36 @@
+if n == 4
+a := a + 1
+fi
+****************
+
+- : parse_tree =
+PT_nt
+("P",
+  [PT_nt
+    ("SL",                                                                                                                 
+      [PT_nt
+       ("S",
+        [PT_term "if";
+         PT_nt
+          ("R",
+           [PT_nt ("E", [PT_nt ("T", [PT_nt ("F", [PT_id "n"]); PT_nt ("FT", [])]); PT_nt ("TT", [])]);
+            PT_nt
+             ("ET",
+              [PT_nt ("ro", [PT_term "=="]);
+               PT_nt ("E", [PT_nt ("T", [PT_nt ("F", [PT_num "4"]); PT_nt ("FT", [])]); PT_nt ("TT", [])])])]);
+         PT_nt
+          ("SL",
+           [PT_nt
+             ("S",
+              [PT_id "a"; PT_term ":=";
+               PT_nt
+                ("E",
+                 [PT_nt ("T", [PT_nt ("F", [PT_id "a"]); PT_nt ("FT", [])]);
+                  PT_nt
+                   ("TT",
+                    [PT_nt ("ao", [PT_term "+"]); PT_nt ("T", [PT_nt ("F", [PT_num "1"]); PT_nt ("FT", [])]);
+                     PT_nt ("TT", [])])])]);
+            PT_nt ("SL", [])]);
+         PT_term "fi"]);
+      PT_nt ("SL", [])]);
+   PT_term "$$"])
