@@ -559,23 +559,25 @@ and ast_e =
 (* Translates parse tree to syntax tree. *)
 let rec ast_ize_P (p:parse_tree) : ast_sl =
   (* your code should replace the following line *)
-  []
+  match p with
+  | PT_nt ("P", [PT_nt SL; PT_term "$$"]) -> ast_ize_SL
+  | _ -> raise (Failure "malformed parse tree in ast_ize_P")
 
 and ast_ize_SL (sl:parse_tree) : ast_sl =
   match sl with
   | PT_nt ("SL", []) -> []
-  (*
-     your code here ...
-  *)
+  | PT_nt ("SL", [PT_nt S; PT_nt SL]) -> ast_ize_S S (@) ast_ize_SL
   | _ -> raise (Failure "malformed parse tree in ast_ize_SL")
 
 and ast_ize_S (s:parse_tree) : ast_s =
   match s with
   | PT_nt ("S", [PT_id lhs; PT_term ":="; expr])
         -> AST_assign (lhs, (ast_ize_expr expr))
-  (*
-     your code here ...
-  *)
+  | PT_nt ("S", [PT_term "read"; PT_id id]) -> AST_read (id)
+  | PT_nt ("S", [PT_term "write"; PT_nt r]) -> AST_write (ast_ize_expr r)
+  | PT_nt ("S", [PT_term "if"; PT_nt r; PT_nt sl; PT_term "fi"]) -> AST_if (ast_ize_expr r,ast_ize_SL sl)
+  | PT_nt ("S", [PT_term "do"; PT_nt sl; PT_term "od"]) -> AST_do (ast_ize_SL sl)
+  | PT_nt ("S", [PT_term "check"; PT_nt r]) -> AST_check(ast_ize_expr r)
   | _ -> raise (Failure "malformed parse tree in ast_ize_S")
 
 and ast_ize_expr (e:parse_tree) : ast_e =
