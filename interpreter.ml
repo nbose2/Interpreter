@@ -558,7 +558,6 @@ and ast_e =
 
 (* Translates parse tree to syntax tree. *)
 let rec ast_ize_P (p:parse_tree) : ast_sl =
-  (* your code should replace the following line *)
   match p with
   | PT_nt ("P", [PT_nt SL; PT_term "$$"]) -> ast_ize_SL
   | _ -> raise (Failure "malformed parse tree in ast_ize_P")
@@ -566,7 +565,7 @@ let rec ast_ize_P (p:parse_tree) : ast_sl =
 and ast_ize_SL (sl:parse_tree) : ast_sl =
   match sl with
   | PT_nt ("SL", []) -> []
-  | PT_nt ("SL", [PT_nt S; PT_nt SL]) -> ast_ize_S S (@) ast_ize_SL
+  | PT_nt ("SL", [PT_nt s; PT_nt sl]) -> ast_ize_S s (@) ast_ize_SL sl
   | _ -> raise (Failure "malformed parse tree in ast_ize_SL")
 
 and ast_ize_S (s:parse_tree) : ast_s =
