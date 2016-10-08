@@ -1,5 +1,5 @@
-# What the given code does (at least from how I (Shuyang) understand it)
-For now, I'm naming it as ReadMe.md as github renders ReadMe directly on the front page of the repo. </br>
+# Notes
+
 I know this may seems like a overkill, but I just want it to be clear to at least myself
 
 # Parser
@@ -67,7 +67,22 @@ I know this may seems like a overkill, but I just want it to be clear to at leas
 ### `knowledge`
   * A list of `symbol_knowledge`
 
+### `parse_tree`
+  * A parse tree structure
+  * PT_nt | PT_term | PT_id | PT_num | PT_err
+  * For an example, please see parse_tree_example.txt
+
 ### `ps_item`
   * either a `int` or a `string`
     - PS_end : `int`
     - PS_sym : `string`
+
+## 2. Definitions
+
+### `ecg` : `grammar`
+  * The extended version of the grammar
+
+## 3. Functions
+
+### `member : 'a -> 'a list -> bool = <fun>`
+to be done by tomorrow...
