@@ -656,7 +656,16 @@ and interpret_sl (sl:ast_sl) (mem:memory)
     : status * memory * string list * string list =
     (*  ok?   new_mem   new_input     new_output *)
   (* your code should replace the following line *)
-  (Good, mem, inp, outp)
+  (* (Good, mem, inp, outp) *)
+  match sl with
+  | s::[] -> interpret_s s mem inp outp
+  | s::ssl 
+        -> let res = interpret_s s mem inp outp in
+                match res with
+                | (stat , memo , input , output) 
+                        -> interpret_sl ssl memo input output
+                | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree")
+  | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree")
 
 (* NB: the following routine is complete.  You can call it on any
    statement node and it figures out what more specific case to invoke.
@@ -678,6 +687,10 @@ and interpret_assign (lhs:string) (rhs:ast_e) (mem:memory)
     : status * memory * string list * string list =
   (* your code should replace the following line *)
   (Good, mem, inp, outp)
+  (* let (val, memo) = interpret_expr rhs mem inp outp in 
+      match (val, memo) with
+      | (Value(v), memo) -> (Good, memo::(lhs,val), inp, outp) 
+      | _ -> raise (Failure "cannot interpret erroneous tree") *)
 
 and interpret_read (id:string) (mem:memory)
                    (inp:string list) (outp:string list)
