@@ -685,8 +685,6 @@ and interpret_s (s:ast_s) (mem:memory)
 and interpret_assign (lhs:string) (rhs:ast_e) (mem:memory)
                      (inp:string list) (outp:string list)
     : status * memory * string list * string list =
-  (* your code should replace the following line *)
-  (* (Good, mem, inp, outp) *)
   let res = interpret_expr rhs mem in 
       match res with
       | (Value(v), m) -> (Good, (lhs,v)::m, inp, outp) 
@@ -695,8 +693,10 @@ and interpret_assign (lhs:string) (rhs:ast_e) (mem:memory)
 and interpret_read (id:string) (mem:memory)
                    (inp:string list) (outp:string list)
     : status * memory * string list * string list =
-  (* your code should replace the following line *)
-  (Good, mem, inp, outp)
+  match inp with
+  | [] -> raise (Failure "cannot interpret erroneous tree")
+  | hd::tl -> (Good, (id,(int_of_string hd))::mem, tl, outp)
+  | _ -> raise (Failure "cannot interpret erroneous tree")
 
 and interpret_write (expr:ast_e) (mem:memory)
                     (inp:string list) (outp:string list)
