@@ -686,11 +686,11 @@ and interpret_assign (lhs:string) (rhs:ast_e) (mem:memory)
                      (inp:string list) (outp:string list)
     : status * memory * string list * string list =
   (* your code should replace the following line *)
-  (Good, mem, inp, outp)
-  (* let (val, memo) = interpret_expr rhs mem inp outp in 
-      match (val, memo) with
-      | (Value(v), memo) -> (Good, memo::(lhs,val), inp, outp) 
-      | _ -> raise (Failure "cannot interpret erroneous tree") *)
+  (* (Good, mem, inp, outp) *)
+  let res = interpret_expr rhs mem in 
+      match res with
+      | (Value(v), m) -> (Good, (lhs,v)::m, inp, outp) 
+      | _ -> raise (Failure "cannot interpret erroneous tree")
 
 and interpret_read (id:string) (mem:memory)
                    (inp:string list) (outp:string list)
