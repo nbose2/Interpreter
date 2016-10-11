@@ -559,50 +559,60 @@ and ast_e =
 (* Translates parse tree to syntax tree. *)
 let rec ast_ize_P (p:parse_tree) : ast_sl =
   match p with
-  | PT_nt ("P", [PT_nt SL; PT_term "$$"]) -> ast_ize_SL
+  | PT_nt ("P", [sl; PT_term "$$"]) -> ast_ize_SL sl 
   | _ -> raise (Failure "malformed parse tree in ast_ize_P")
 
 and ast_ize_SL (sl:parse_tree) : ast_sl =
   match sl with
   | PT_nt ("SL", []) -> []
-  | PT_nt ("SL", [PT_nt s; PT_nt sl]) -> ast_ize_S s (@) ast_ize_SL sl
+  | PT_nt ("SL", [s; sl]) -> (ast_ize_S s) :: (ast_ize_SL sl)
   | _ -> raise (Failure "malformed parse tree in ast_ize_SL")
 
 and ast_ize_S (s:parse_tree) : ast_s =
   match s with
-  | PT_nt ("S", [PT_id lhs; PT_term ":="; expr])
-        -> AST_assign (lhs, (ast_ize_expr expr))
+  | PT_nt ("S", [PT_id lhs; PT_term ":="; expr]) -> AST_assign (lhs, (ast_ize_expr expr))
   | PT_nt ("S", [PT_term "read"; PT_id id]) -> AST_read (id)
-  | PT_nt ("S", [PT_term "write"; PT_nt r]) -> AST_write (ast_ize_expr r)
-  | PT_nt ("S", [PT_term "if"; PT_nt r; PT_nt sl; PT_term "fi"]) -> AST_if (ast_ize_expr r,ast_ize_SL sl)
-  | PT_nt ("S", [PT_term "do"; PT_nt sl; PT_term "od"]) -> AST_do (ast_ize_SL sl)
-  | PT_nt ("S", [PT_term "check"; PT_nt r]) -> AST_check(ast_ize_expr r)
+  | PT_nt ("S", [PT_term "write"; r]) -> AST_write (ast_ize_expr r)
+  | PT_nt ("S", [PT_term "if"; r; sl; PT_term "fi"]) -> AST_if (ast_ize_expr r,ast_ize_SL sl)
+  | PT_nt ("S", [PT_term "do"; sl; PT_term "od"]) -> AST_do (ast_ize_SL sl)
+  | PT_nt ("S", [PT_term "check"; r]) -> AST_check(ast_ize_expr r)
   | _ -> raise (Failure "malformed parse tree in ast_ize_S")
 
 and ast_ize_expr (e:parse_tree) : ast_e =
   (* e is an R, E, T, or F parse tree node *)
   match e with
-  (*
-     your code here ...
-  *)
+  (*R*)
+  | PT_nt ("R", [e; et]) -> ast_ize_reln_tail (ast_ize_expr e) et  
+  (*E*)
+  | PT_nt ("E", [t; tt]) -> ast_ize_expr_tail (ast_ize_expr t) tt 
+  (*T*)
+  | PT_nt ("T", [f; ft]) -> ast_ize_expr_tail (ast_ize_expr f) ft 
+  (*F*)  
+  | PT_nt ("F", [PT_term "("; r; PT_term ")"]) -> ast_ize_expr r 
+  | PT_nt ("F", [PT_id id]) -> AST_id id 
+  | PT_nt ("F", [PT_num lit]) -> AST_num lit 
   | _ -> raise (Failure "malformed parse tree in ast_ize_expr")
 
 and ast_ize_reln_tail (lhs:ast_e) (tail:parse_tree) : ast_e =
   (* lhs in an inheritec attribute.
      tail is an ET parse tree node *)
   match tail with
-  (*
-     your code here ...
-  *)
+  | PT_nt ("ET", [PT_nt ("ro", [PT_term sign]); e]) -> AST_binop (sign,lhs,(ast_ize_expr e))
+  | PT_nt ("ET", []) -> lhs
   | _ -> raise (Failure "malformed parse tree in ast_ize_reln_tail")
 
 and ast_ize_expr_tail (lhs:ast_e) (tail:parse_tree) : ast_e =
   (* lhs in an inherited attribute.
      tail is a TT or FT parse tree node *)
   match tail with
-  (*
-     your code here ...
-  *)
+  (*TT*)
+  | PT_nt ("TT", [PT_nt ("ao", [PT_term sign]); t; tt]) 
+            -> ast_ize_expr_tail (AST_binop (sign, lhs, (ast_ize_expr t))) tt 
+  | PT_nt ("TT", []) -> lhs
+  (*FT*)
+  | PT_nt ("FT", [PT_nt ("mo", [PT_term sign]); f; ft]) 
+            -> ast_ize_expr_tail (AST_binop (sign, lhs, (ast_ize_expr f))) ft
+  | PT_nt ("FT", []) -> lhs
   | _ -> raise (Failure "malformed parse tree in ast_ize_expr_tail")
 ;;
 
