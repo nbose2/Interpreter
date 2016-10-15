@@ -791,7 +791,13 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
                                 let res_r = interpret_expr rhs mem in 
                                 match op with
                                 | "+" -> Value((int_of_value res_l) + (int_of_value res_r))
-                                (*| _ -> expr2*)
+                                | "-" -> Value((int_of_value res_l) - (int_of_value res_r))
+                                | "==" -> Value((int_of_value res_l) = (int_of_value res_r))
+                                | "<>" -> Value((int_of_value res_l) <> (int_of_value res_r))
+                                | "<" -> Value((int_of_value res_l) < (int_of_value res_r))
+                                | "<=" -> Value((int_of_value res_l) <= (int_of_value res_r))
+                                | ">" -> Value((int_of_value res_l) > (int_of_value res_r))
+                                | ">=" -> Value((int_of_value res_l) >= (int_of_value res_r))
                                 ) 
   | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree")
 
