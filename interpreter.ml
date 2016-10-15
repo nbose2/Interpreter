@@ -666,6 +666,7 @@ and interpret_sl (sl:ast_sl) (mem:memory)
   (* your code should replace the following line *)
   (* (Good, mem, inp, outp) *)
   match sl with
+  | [] -> (Good, mem, inp, outp)
   | s::[] -> interpret_s s mem inp outp
   | s::ssl 
         -> let res = interpret_s s mem inp outp in
@@ -673,7 +674,6 @@ and interpret_sl (sl:ast_sl) (mem:memory)
                 | (stat , memo , input , output) 
                         -> interpret_sl ssl memo input output
                 | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree"))
-  | [] -> (Good, mem, inp, outp)
   | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree")
 
 (* NB: the following routine is complete.  You can call it on any
@@ -735,6 +735,7 @@ and interpret_do (sl:ast_sl) (mem:memory)
                  (inp:string list) (outp:string list)
     : status * memory * string list * string list =
   match sl with
+  | [] -> raise (Failure "interpret_do: infinite loop") 
   | s :: tl -> (match s with
                | AST_check(cond) -> let cond_res = interpret_check cond mem inp outp in
                                       (match cond_res with
@@ -754,7 +755,6 @@ and interpret_do (sl:ast_sl) (mem:memory)
                 (match body_res with
                 | (_, m, i, o) -> interpret_do sl m i o
                 | _ -> raise (Failure "interpret_do: cannot interpret erroneous tree"))
-  | [] -> raise (Failure "interpret_do: infinite loop") 
 
                                        
 
@@ -771,13 +771,26 @@ and interpret_check (cond:ast_e) (mem:memory)
 
 and interpret_expr (expr:ast_e) (mem:memory) : value * memory =
   (* your code should replace the following line *)
-  (Error("code not written yet"), mem) 
- (* match expr with
-  | AST_id(id) -> (Good, (id::mem))
-  | AST_num(num) -> (Good, (num::mem))
-  | AST_binop(op, lhs, rhs) -> eval_binop op (interpret_expr lhs mem) (inpterpret_expr rhs mem)
+  (* (Error("code not written yet"), mem)  *)
+ match expr with
+  | AST_id(id) 
+      -> let bind = List.find (fun x -> match x with 
+                                        | (id,_) -> true
+                                        | _ -> false) 
+                              mem in 
+            (match bind with
+            | (i,v) -> (Value(v), mem)
+            | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree"))
+
+  | AST_num(num) -> (Value(int_of_string num), mem)
+  (* | AST_binop(op, lhs, rhs) ->  *)
+  (* | AST_binop(op, lhs, rhs) -> (let res_l = interpret_expr lhs mem in 
+                                let res_r = interpret_expr rhs mem in 
+                                match op with
+                                | "+" -> ()
+                                | _ -> expr2
+                                ) *)
   | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree")
-  *)
 
 (*******************************************************************
     Testing
