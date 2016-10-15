@@ -633,6 +633,11 @@ let int_of_value x = match x with
                      | Value(y) -> y
                      | _ -> raise(Failure "int_of_value: need value to use this function.");;
 
+let int_of_bool x = match x with
+                    | true -> 1
+                    | false -> 0
+                    | _ -> raise(Failure "int_of_bool: need bool to use this function.");;
+
 (* concatenate strings, with a separator in between if both were nonempty *)
 let str_cat sep a b =
   match (a, b) with
@@ -644,12 +649,6 @@ type status =
 | Good
 | Bad       (* run-time error *)
 | Done;;    (* failed check *)
-
-
-let rec print_string_list l =
-  match l with
-  | [] -> print_string "\n"
-  | h::t -> print_string h; print_string " "; print_string_list t;;
 
 
 (* Input to a calculator program is just a sequence of numbers.  We use
@@ -791,11 +790,18 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
                                 let res_r = interpret_expr rhs mem in 
                                 match op with
                                 | "+" -> Value((int_of_value res_l) + (int_of_value res_r))
+                                | "-" -> Value((int_of_value res_l) - (int_of_value res_r))
                                 | "*" -> Value((int_of_value res_l) * (int_of_value res_r))
                                 | "/" -> (match (int_of_value res_r) with
                                           | 0 -> Error("divide by 0")
                                           | _ -> Value((int_of_value res_l) / (int_of_value res_r)))
                                 | "-" -> Value((int_of_value res_l) - (int_of_value res_r))
+                                | "==" -> Value(int_of_bool ((int_of_value res_l) = (int_of_value res_r)))
+                                | "<>" -> Value(int_of_bool ((int_of_value res_l) <> (int_of_value res_r)))
+                                | "<" -> Value(int_of_bool ((int_of_value res_l) < (int_of_value res_r)))
+                                | "<=" -> Value(int_of_bool ((int_of_value res_l) <= (int_of_value res_r)))
+                                | ">" -> Value(int_of_bool ((int_of_value res_l) > (int_of_value res_r)))
+                                | ">=" -> Value(int_of_bool ((int_of_value res_l) >= (int_of_value res_r)))
                                 ) 
   | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree")
 
