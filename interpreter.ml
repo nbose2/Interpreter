@@ -792,7 +792,9 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
                                 match op with
                                 | "+" -> Value((int_of_value res_l) + (int_of_value res_r))
                                 | "*" -> Value((int_of_value res_l) * (int_of_value res_r))
-                                | "/" -> Value((int_of_value res_l) / (int_of_value res_r))
+                                | "/" -> (match (int_of_value res_r) with
+                                          | 0 -> Error("divide by 0")
+                                          | _ -> Value((int_of_value res_l) / (int_of_value res_r)))
                                 | "-" -> Value((int_of_value res_l) - (int_of_value res_r))
                                 ) 
   | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree")
