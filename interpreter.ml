@@ -662,10 +662,10 @@ and interpret_sl (sl:ast_sl) (mem:memory)
   | s::[] -> interpret_s s mem inp outp
   | s::ssl 
         -> let res = interpret_s s mem inp outp in
-                match res with
+                (match res with
                 | (stat , memo , input , output) 
                         -> interpret_sl ssl memo input output
-                | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree")
+                | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree"))
   | [] -> (Good, mem, inp, outp)
   | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree")
 
