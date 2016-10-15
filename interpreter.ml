@@ -627,7 +627,6 @@ type memory = (string * int) list;;
 
 type value =    (* an integer or an error message *)
 | Value of int
-| BOOL of bool 
 | Error of string;;
 
 (* concatenate strings, with a separator in between if both were nonempty *)
@@ -696,7 +695,7 @@ and interpret_assign (lhs:string) (rhs:ast_e) (mem:memory)
     : status * memory * string list * string list =
   let res = interpret_expr rhs mem in 
       match res with
-      | (Value(v), m) -> (Good, (lhs,v)::m, inp, outp) 
+      | Value(v) -> (Good, (lhs,v)::mem, inp, outp) 
       | _ -> raise (Failure "interpret_assign: cannot interpret erroneous tree")
 
 and interpret_read (id:string) (mem:memory)
@@ -713,7 +712,7 @@ and interpret_write (expr:ast_e) (mem:memory)
   (*Evaluate the expr and append it to outp list*)
   let res = interpret_expr expr mem in 
       match res with
-      | (Value(v), m) -> (Good, mem, inp, (string_of_int v)::outp)
+      | Value(v) -> (Good, mem, inp, (string_of_int v)::outp)
       | _ -> raise (Failure "cannot interpret erroneous tree")
       
 and interpret_if (cond:ast_e) (sl:ast_sl) (mem:memory)
@@ -724,10 +723,10 @@ and interpret_if (cond:ast_e) (sl:ast_sl) (mem:memory)
   (*if the cond is true then interprete the sl, else skip*)
   let condition = interpret_expr cond mem in
       match condition with
-      | (BOOL(v), m) 
+      | Value(v) 
           -> match v with
-          | true -> interpret_sl sl m inp outp 
-          | false -> (Good, mem,inp, outp)
+          | 1 -> interpret_sl sl mem inp outp 
+          | 0 -> (Good, mem,inp, outp)
           | _ -> raise (Failure "cannot interpret erroneous tree")
       | _ -> raise (Failure "cannot interpret erroneous tree")
 
@@ -763,13 +762,13 @@ and interpret_check (cond:ast_e) (mem:memory)
     : status * memory * string list * string list =
   let res = interpret_expr cond mem in
     match res with
-    | (BOOL(v), m) -> match v with
-                        | false -> (Done, m, inp, outp)
-                        | true -> (Good, m, inp, outp)
+    | Value(v) -> match v with
+                        | 0 -> (Done, mem, inp, outp)
+                        | 1 -> (Good, mem, inp, outp)
                         | _ -> raise (Failure "interpret_check: cannot interpret erroneous tree") 
     | _ -> raise (Failure "interpret_check: cannot interpret erroneous tree") 
 
-and interpret_expr (expr:ast_e) (mem:memory) : value * memory =
+and interpret_expr (expr:ast_e) (mem:memory) : value =
   (* your code should replace the following line *)
   (* (Error("code not written yet"), mem)  *)
  match expr with
@@ -779,10 +778,10 @@ and interpret_expr (expr:ast_e) (mem:memory) : value * memory =
                                         | _ -> false) 
                               mem in 
             (match bind with
-            | (i,v) -> (Value(v), mem)
+            | (i,v) -> Value(v)
             | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree"))
 
-  | AST_num(num) -> (Value(int_of_string num), mem)
+  | AST_num(num) -> Value(int_of_string num)
   (* | AST_binop(op, lhs, rhs) ->  *)
   (* | AST_binop(op, lhs, rhs) -> (let res_l = interpret_expr lhs mem in 
                                 let res_r = interpret_expr rhs mem in 
