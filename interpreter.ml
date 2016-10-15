@@ -627,6 +627,7 @@ type memory = (string * int) list;;
 
 type value =    (* an integer or an error message *)
 | Value of int
+| BOOL of bool 
 | Error of string;;
 
 (* concatenate strings, with a separator in between if both were nonempty *)
@@ -702,13 +703,26 @@ and interpret_write (expr:ast_e) (mem:memory)
                     (inp:string list) (outp:string list)
     : status * memory * string list * string list =
   (* your code should replace the following line *)
-  (Good, mem, inp, outp)
-
+  (*Evaluate the expr and append it to outp list*)
+  let res = interpret_expr expr mem in 
+      match res with
+      | (Value(v), m) -> (Good, mem, inp, (string_of_int v)::outp)
+      | _ -> raise (Failure "cannot interpret erroneous tree")
+      
 and interpret_if (cond:ast_e) (sl:ast_sl) (mem:memory)
                  (inp:string list) (outp:string list)
     : status * memory * string list * string list =
   (* your code should replace the following line *)
-  (Good, mem, inp, outp)
+  (* (Good, mem, inp, outp) *)
+  (*if the cond is true then interprete the sl, else skip*)
+  let condition = interpret_expr cond mem in
+      match condition with
+      | (BOOL(v), m) 
+          -> match v with
+          | true -> interpret_sl sl m inp outp 
+          | false -> (Good, mem,inp, outp)
+          | _ -> raise (Failure "cannot interpret erroneous tree")
+      | _ -> raise (Failure "cannot interpret erroneous tree")
 
 and interpret_do (sl:ast_sl) (mem:memory)
                  (inp:string list) (outp:string list)
