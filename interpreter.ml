@@ -629,6 +629,10 @@ type value =    (* an integer or an error message *)
 | Value of int
 | Error of string;;
 
+let int_of_value x = match x with
+                     | Value(y) -> y
+                     | _ -> raise(Failure "int_of_value: need value to use this function.");;
+
 (* concatenate strings, with a separator in between if both were nonempty *)
 let str_cat sep a b =
   match (a, b) with
@@ -783,12 +787,12 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
 
   | AST_num(num) -> Value(int_of_string num)
   (* | AST_binop(op, lhs, rhs) ->  *)
-  (* | AST_binop(op, lhs, rhs) -> (let res_l = interpret_expr lhs mem in 
+  | AST_binop(op, lhs, rhs) -> (let res_l = interpret_expr lhs mem in 
                                 let res_r = interpret_expr rhs mem in 
                                 match op with
-                                | "+" -> ()
-                                | _ -> expr2
-                                ) *)
+                                | "+" -> Value((int_of_value res_l) + (int_of_value res_r))
+                                (*| _ -> expr2*)
+                                ) 
   | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree")
 
 (*******************************************************************
