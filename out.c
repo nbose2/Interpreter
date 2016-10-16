@@ -1,14 +1,14 @@
 #include<stdio.h>
 int main(int argc, char *argv[]){
-	int counter = 0;
+	int counter = 1;
 
-	a = argv[counter]; 
+	int a = atoi(argv[counter]); 
 	counter++; 
 
-	b = argv[counter]; 
+	int b = atoi(argv[counter]); 
 	counter++; 
 
-	sum = a + b ;
+	int sum = a + b ;
 
 	printf("%d ", sum );
 

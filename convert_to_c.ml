@@ -3,7 +3,7 @@
 
 let print_to_c_file str = 
 	let oc = (open_out "out.c") in
-		Printf.fprintf oc ("%s\n") ("#include<stdio.h>\nint main(int argc, char *argv[]){\n\tint counter = 0;\n"^str^"}");
+		Printf.fprintf oc ("%s\n") ("#include<stdio.h>\nint main(int argc, char *argv[]){\n\tint counter = 1;\n"^str^"}");
 		close_out oc;
 ;;
 
@@ -18,8 +18,8 @@ let rec convert_sl (stmt_l:ast_sl) =
 (*return a string representing the statement*)
 and convert_stmt (stmt:ast_s) = 
 	match stmt with
-	| AST_assign (id, expr) -> ("\t"^id^" = "^(convert_expr expr)^";\n")
-	| AST_read(id) -> ("\t"^id^" = argv[counter]; \n\tcounter++; \n")
+	| AST_assign (id, expr) -> ("\tint "^id^" = "^(convert_expr expr)^";\n")
+	| AST_read(id) -> ("\tint "^id^" = atoi(argv[counter]); \n\tcounter++; \n")
 	| AST_write(expr) -> ("\t"^"printf(\"%d \", "^(convert_expr expr)^");\n")
 	| AST_if(cond, sl) -> ("\t"^"if ("^(convert_expr cond)^") {\n\t"^(convert_sl sl)^"\n}\n")
 	| AST_do(sl) -> (match sl with
