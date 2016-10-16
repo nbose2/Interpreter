@@ -632,9 +632,9 @@ type value =    (* an integer or an error message *)
 let rec find_val key list = 
   match list with
   | hd::tl -> (match hd with
-                | (k,v) when k = key -> v
+                | (k,v) when k = key -> Value(v)
                 | _ -> find_val key tl)
-  | [] -> raise(Failure (key^": symbol not found"));;
+  | [] -> Error(key^": symbol not found");;
 
 let int_of_value x = match x with
                      | Value(y) -> y
@@ -680,10 +680,10 @@ and interpret_sl (sl:ast_sl) (mem:memory)
   | s::ssl 
         -> let res = interpret_s s mem inp outp in
                 (match res with
-                | (stat , memo , input , output) 
-                        -> interpret_sl ssl memo input output
-                | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree"))
-  | _ -> raise (Failure "interpret_sl: cannot interpret erroneous tree")
+                | (Good , m , i , o) -> interpret_sl ssl m i o
+                | (Bad, m, i, o) -> (Bad, m, i, o)
+                | _ -> (Bad, mem, inp, ["interpret_sl: unexpected return value from statement"]))
+  | _ -> (Bad, mem, inp, ["interpret_sl: cannot interpret erroneous tree"])
 
 (* NB: the following routine is complete.  You can call it on any
    statement node and it figures out what more specific case to invoke.
@@ -698,7 +698,7 @@ and interpret_s (s:ast_s) (mem:memory)
   | AST_if(cond, sl)     -> interpret_if cond sl mem inp outp
   | AST_do(sl)           -> interpret_do sl mem inp outp
   | AST_check(cond)      -> interpret_check cond mem inp outp
-  | AST_error            -> raise (Failure "interpret_s: cannot interpret erroneous tree")
+  | AST_error            -> (Bad, mem, inp, ["interpret_s: cannot interpret erroneous tree"])
 
 and interpret_assign (lhs:string) (rhs:ast_e) (mem:memory)
                      (inp:string list) (outp:string list)
@@ -706,16 +706,17 @@ and interpret_assign (lhs:string) (rhs:ast_e) (mem:memory)
   let res = interpret_expr rhs mem in 
       match res with
       | Value(v) -> (Good, (lhs,v)::mem, inp, outp) 
-      | _ -> raise (Failure "interpret_assign: cannot interpret erroneous tree")
+      | Error(m) -> (Bad, mem, inp, [m])
+      | _ -> (Bad, mem, inp, ["interpret_assign: unexpected expression type"])
 
 and interpret_read (id:string) (mem:memory)
                    (inp:string list) (outp:string list)
     : status * memory * string list * string list =
   match inp with
-  | [] -> raise (Failure "interpret_read: unexpected end of input")
+  | [] -> (Bad, mem, inp, ["interpret_read: unexpected end of input"])
   | hd::tl -> try ignore (int_of_string hd);(Good, (id,(int_of_string hd))::mem, tl, outp) 
-              with _ -> raise (Failure "interpret_read: non-numeric input")
-  | _ -> raise (Failure "interpret_read: error happened")
+              with _ -> (Bad, mem, inp, ["interpret_read: non-numeric input"])
+  | _ -> (Bad, mem, inp, ["interpret_read: unexpected error"])
 
 and interpret_write (expr:ast_e) (mem:memory)
                     (inp:string list) (outp:string list)
@@ -725,7 +726,8 @@ and interpret_write (expr:ast_e) (mem:memory)
   let res = interpret_expr expr mem in 
       match res with
       | Value(v) -> (Good, mem, inp, outp@[(string_of_int v)])
-      | _ -> raise (Failure "cannot interpret erroneous tree")
+      | Error(m) -> (Bad, mem, inp, [m])
+      | _ -> (Bad, mem, inp, ["interpret_write: unexpected expression type"])
       
 and interpret_if (cond:ast_e) (sl:ast_sl) (mem:memory)
                  (inp:string list) (outp:string list)
@@ -734,37 +736,42 @@ and interpret_if (cond:ast_e) (sl:ast_sl) (mem:memory)
   (*if the cond is true then interprete the sl, else skip*)
   let condition = interpret_expr cond mem in
       match condition with
-      | Value(v) 
-          -> match v with
+      | Value(v) ->
+          (match v with
           | 1 -> interpret_sl sl mem inp outp 
           | 0 -> (Good, mem,inp, outp)
-          | _ -> raise (Failure "cannot interpret erroneous tree")
-      | _ -> raise (Failure "cannot interpret erroneous tree")
+          | _ -> (Bad, mem, inp, ["interpret_if: condition gives a value instead of a boolean"]))
+      | Error(m) -> (Bad, mem, inp, [m])
+      | _ -> (Bad, mem, inp, ["interpret_if: unexpected condition type"])
 
 and interpret_do (sl:ast_sl) (mem:memory)
                  (inp:string list) (outp:string list)
     : status * memory * string list * string list =
   match sl with
-  | [] -> raise (Failure "interpret_do: infinite loop") 
+  | [] -> (Bad, mem, inp, ["interpret_do: infinite loop"]) 
   | s :: tl -> (match s with
                | AST_check(cond) -> let cond_res = interpret_check cond mem inp outp in
                                       (match cond_res with
-                                      | (st, _, _, _) -> (match st with
-                                                         | Done -> (Good, mem, inp, outp)
-                                                         | Good -> let body = interpret_sl tl mem inp outp in
-                                                                     match body with
-                                                                     | (st, m, i, o) -> interpret_do sl m i o
-                                                                     | _ -> raise (Failure "interpret_do: cannot interpret erroneous tree")
-                                                                     | _ -> raise (Failure "interpret_do: cannot interpret erroneous tree"))
-                                      | _ -> raise (Failure "interpret_do: cannot interpret erroneous tree"))
+                                      | (st, _, _, o) -> (match st with
+                                                          | Done -> (Good, mem, inp, outp)
+                                                          | Good -> let body = interpret_sl tl mem inp outp in
+                                                                     (match body with
+                                                                     | (Good, m, i, o) -> interpret_do sl m i o
+                                                                     | (Bad, m, i, o) -> (Bad, m, i, o)
+                                                                     | _ -> (Bad, mem, inp, outp))
+                                                          | Bad -> (Bad, mem, inp, o)
+                                                          | _ -> (Bad, mem, inp, outp))
+                                      | _ -> (Bad, mem, inp, outp))
                | _ -> let body_res = interpret_sl sl mem inp outp in
                           (match body_res with
-                           | (_, m, i, o) -> interpret_do sl m i o
-                           | _ -> raise (Failure "interpret_do: cannot interpret erroneous tree")))
+                           | (Good, m, i, o) -> interpret_do sl m i o
+                           | (Bad, m, i, o) -> (Bad, m, i, o)
+                           | _ -> (Bad, mem, inp, outp)))
   | s :: [] -> let body_res = interpret_s s mem inp outp in
                 (match body_res with
-                | (_, m, i, o) -> interpret_do sl m i o
-                | _ -> raise (Failure "interpret_do: cannot interpret erroneous tree"))
+                | (Good, m, i, o) -> interpret_do sl m i o
+                | (Bad, m, i, o) -> (Bad, m, i, o)
+                | _ -> (Bad, mem, inp, outp))
 
                                        
 
@@ -773,17 +780,18 @@ and interpret_check (cond:ast_e) (mem:memory)
     : status * memory * string list * string list =
   let res = interpret_expr cond mem in
     match res with
-    | Value(v) -> match v with
+    | Value(v) -> (match v with
                         | 0 -> (Done, mem, inp, outp)
                         | 1 -> (Good, mem, inp, outp)
-                        | _ -> raise (Failure "interpret_check: cannot interpret erroneous tree") 
-    | _ -> raise (Failure "interpret_check: cannot interpret erroneous tree") 
+                        | _ -> (Bad, mem, inp, outp))
+    | Error(m) -> (Bad, mem, inp, [m])
+    | _ -> (Bad, mem, inp, outp)
 
 and interpret_expr (expr:ast_e) (mem:memory) : value =
   (* your code should replace the following line *)
   (* (Error("code not written yet"), mem)  *)
  match expr with
-  | AST_id(id) -> Value(find_val id mem)
+  | AST_id(id) -> find_val id mem
   | AST_num(num) -> Value(int_of_string num)
   | AST_binop(op, lhs, rhs) -> (let res_l = interpret_expr lhs mem in 
                                 let res_r = interpret_expr rhs mem in 
@@ -792,7 +800,7 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
                                 | "-" -> Value((int_of_value res_l) - (int_of_value res_r))
                                 | "*" -> Value((int_of_value res_l) * (int_of_value res_r))
                                 | "/" -> (match (int_of_value res_r) with
-                                          | 0 -> raise (Failure "interpret_expr: divide by zero")
+                                          | 0 -> Error("interpret_expr: divide by zero") (* raise (Failure "interpret_expr: divide by zero") *)
                                           | _ -> Value((int_of_value res_l) / (int_of_value res_r)))
                                 | "==" -> Value(int_of_bool ((int_of_value res_l) = (int_of_value res_r)))
                                 | "<>" -> Value(int_of_bool ((int_of_value res_l) <> (int_of_value res_r)))
@@ -801,7 +809,7 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
                                 | ">" -> Value(int_of_bool ((int_of_value res_l) > (int_of_value res_r)))
                                 | ">=" -> Value(int_of_bool ((int_of_value res_l) >= (int_of_value res_r)))
                                 ) 
-  | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree")
+  | _ -> Error("unexpected syntax for expression") (* raise (Failure "interpret_expr: cannot interpret erroneous tree") *)
 
 (*******************************************************************
     Testing
@@ -816,11 +824,11 @@ let primes_syntax_tree = ast_ize_P primes_parse_tree;;
 let ecg_run prog inp = interpret (ast_ize_P (parse ecg_parse_table prog)) inp;;
 
 let main () =
-  print_string (ecg_run "write foo" "");
- (* print_string (interpret primes_syntax_tree "10"); *)
+  (* print_string (interpret primes_syntax_tree "10"); *)
+  print_string (interpret primes_syntax_tree "10"); 
     (* should print "10 5" *)
   print_newline ();
-  (* print_string (interpret primes_syntax_tree "10");
+   print_string (interpret primes_syntax_tree "10");
     (* should print "2 3 5 7 11 13 17 19 23 29" *)
   print_newline ();
   print_string (interpret sum_ave_syntax_tree "4 foo");
@@ -832,7 +840,7 @@ let main () =
   print_string (ecg_run "write foo" "");
     (* should print "foo: symbol not found" *)
   print_newline ();
-  print_string (ecg_run "read a read b" "3"); *)
+  print_string (ecg_run "read a read b" "3"); 
     (* should print "unexpected end of input" *)
   print_newline ();;
 
