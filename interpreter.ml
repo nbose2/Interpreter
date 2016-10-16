@@ -657,6 +657,11 @@ type status =
 | Bad       (* run-time error *)
 | Done;;    (* failed check *)
 
+let is_numeric str =
+  let s = global_replace (Str.regexp "[0-9]") "" str in
+    match s with
+    | "" -> true
+    | _ -> false;;
 
 (* Input to a calculator program is just a sequence of numbers.  We use
    the standard Str library to split the single input string into
@@ -714,8 +719,10 @@ and interpret_read (id:string) (mem:memory)
     : status * memory * string list * string list =
   match inp with
   | [] -> (Bad, mem, inp, ["interpret_read: unexpected end of input"])
-  | hd::tl -> try ignore (int_of_string hd);(Good, (id,(int_of_string hd))::mem, tl, outp) 
-              with _ -> (Bad, mem, inp, ["interpret_read: non-numeric input"])
+  | hd::tl -> let is_number = is_numeric hd in
+                match is_number with
+                | true -> (Good, (id,(int_of_string hd))::mem, tl, outp) 
+                | false -> (Bad, mem, inp, ["interpret_read: non-numeric input"])
   | _ -> (Bad, mem, inp, ["interpret_read: unexpected error"])
 
 and interpret_write (expr:ast_e) (mem:memory)
@@ -825,7 +832,7 @@ let ecg_run prog inp = interpret (ast_ize_P (parse ecg_parse_table prog)) inp;;
 
 let main () =
   (* print_string (interpret primes_syntax_tree "10"); *)
-  print_string (interpret primes_syntax_tree "10"); 
+  print_string (interpret sum_ave_syntax_tree "4 6"); 
     (* should print "10 5" *)
   print_newline ();
    print_string (interpret primes_syntax_tree "10");
