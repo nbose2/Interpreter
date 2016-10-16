@@ -636,6 +636,12 @@ let rec find_val key list =
                 | _ -> find_val key tl)
   | [] -> Error(key^": symbol not found");;
 
+let is_numeric str = 
+  let s = global_replace (regexp "[0-9]+") "" str in 
+    match s with
+    | "" -> true
+    | _ -> false ;;
+
 let int_of_value x = match x with
                      | Value(y) -> y
                      | _ -> raise(Failure "int_of_value: need value to use this function.");;
@@ -672,8 +678,6 @@ and interpret_sl (sl:ast_sl) (mem:memory)
                  (inp:string list) (outp:string list)
     : status * memory * string list * string list =
     (*  ok?   new_mem   new_input     new_output *)
-  (* your code should replace the following line *)
-  (* (Good, mem, inp, outp) *)
   match sl with
   | [] -> (Good, mem, inp, outp)
   | s::[] -> interpret_s s mem inp outp
@@ -714,14 +718,14 @@ and interpret_read (id:string) (mem:memory)
     : status * memory * string list * string list =
   match inp with
   | [] -> (Bad, mem, inp, ["interpret_read: unexpected end of input"])
-  | hd::tl -> try ignore (int_of_string hd);(Good, (id,(int_of_string hd))::mem, tl, outp) 
-              with _ -> (Bad, mem, inp, ["interpret_read: non-numeric input"])
+  | hd::tl -> match (is_numeric hd) with
+              | true -> (Good, (id,(int_of_string hd))::mem, tl, outp)
+              | _ -> (Bad, mem, inp, ["interpret_read: non-numeric input"])
   | _ -> (Bad, mem, inp, ["interpret_read: unexpected error"])
 
 and interpret_write (expr:ast_e) (mem:memory)
                     (inp:string list) (outp:string list)
     : status * memory * string list * string list =
-  (* your code should replace the following line *)
   (*Evaluate the expr and append it to outp list*)
   let res = interpret_expr expr mem in 
       match res with
@@ -732,7 +736,6 @@ and interpret_write (expr:ast_e) (mem:memory)
 and interpret_if (cond:ast_e) (sl:ast_sl) (mem:memory)
                  (inp:string list) (outp:string list)
     : status * memory * string list * string list =
-  (* your code should replace the following line *)
   (*if the cond is true then interprete the sl, else skip*)
   let condition = interpret_expr cond mem in
       match condition with
@@ -788,8 +791,6 @@ and interpret_check (cond:ast_e) (mem:memory)
     | _ -> (Bad, mem, inp, outp)
 
 and interpret_expr (expr:ast_e) (mem:memory) : value =
-  (* your code should replace the following line *)
-  (* (Error("code not written yet"), mem)  *)
  match expr with
   | AST_id(id) -> find_val id mem
   | AST_num(num) -> Value(int_of_string num)
@@ -825,7 +826,7 @@ let ecg_run prog inp = interpret (ast_ize_P (parse ecg_parse_table prog)) inp;;
 
 let main () =
   (* print_string (interpret primes_syntax_tree "10"); *)
-  print_string (interpret primes_syntax_tree "10"); 
+  print_string (interpret sum_ave_syntax_tree "4 6");
     (* should print "10 5" *)
   print_newline ();
    print_string (interpret primes_syntax_tree "10");
