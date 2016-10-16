@@ -705,8 +705,10 @@ and interpret_read (id:string) (mem:memory)
                    (inp:string list) (outp:string list)
     : status * memory * string list * string list =
   match inp with
-  | [] -> raise (Failure "interpret_read: cannot interpret erroneous tree")
-  | hd::tl -> (Good, (id,(int_of_string hd))::mem, tl, outp)
+  | [] -> raise (Failure "interpret_read: unexpected end of input")
+  | hd::tl -> try ignore (int_of_string hd);(Good, (id,(int_of_string hd))::mem, tl, outp) 
+              with _ -> raise (Failure "interpret_read: non-numeric input")
+  | _ -> raise (Failure "interpret_read: error happened")
 
 and interpret_write (expr:ast_e) (mem:memory)
                     (inp:string list) (outp:string list)
@@ -715,14 +717,13 @@ and interpret_write (expr:ast_e) (mem:memory)
   (*Evaluate the expr and append it to outp list*)
   let res = interpret_expr expr mem in 
       match res with
-      | Value(v) -> (Good, mem, inp, (string_of_int v)::outp)
+      | Value(v) -> (Good, mem, inp, outp@[(string_of_int v)])
       | _ -> raise (Failure "cannot interpret erroneous tree")
       
 and interpret_if (cond:ast_e) (sl:ast_sl) (mem:memory)
                  (inp:string list) (outp:string list)
     : status * memory * string list * string list =
   (* your code should replace the following line *)
-  (* (Good, mem, inp, outp) *)
   (*if the cond is true then interprete the sl, else skip*)
   let condition = interpret_expr cond mem in
       match condition with
@@ -776,16 +777,18 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
   (* (Error("code not written yet"), mem)  *)
  match expr with
   | AST_id(id) 
-      -> let bind = List.find (fun x -> match x with 
-                                        | (id,_) -> true
+      -> (try ignore (List.find (fun x -> match x with 
+                                        | (i,_) when  i = id -> true
                                         | _ -> false) 
-                              mem in 
-            (match bind with
-            | (i,v) -> Value(v)
-            | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree"))
-
+                              mem);  let bind = (List.find (fun x -> match x with 
+                                                                      | (i,_) when  i = id -> true
+                                                                      | _ -> false) 
+                                          mem) in 
+                                          (match bind with
+                                          | (i,v) -> Value(v)
+                                          | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree"))
+        with _ -> raise(Failure (id^": symbol not found")))
   | AST_num(num) -> Value(int_of_string num)
-  (* | AST_binop(op, lhs, rhs) ->  *)
   | AST_binop(op, lhs, rhs) -> (let res_l = interpret_expr lhs mem in 
                                 let res_r = interpret_expr rhs mem in 
                                 match op with
@@ -793,7 +796,7 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
                                 | "-" -> Value((int_of_value res_l) - (int_of_value res_r))
                                 | "*" -> Value((int_of_value res_l) * (int_of_value res_r))
                                 | "/" -> (match (int_of_value res_r) with
-                                          | 0 -> Error("divide by 0")
+                                          | 0 -> raise (Failure "interpret_expr: divide by zero")
                                           | _ -> Value((int_of_value res_l) / (int_of_value res_r)))
                                 | "==" -> Value(int_of_bool ((int_of_value res_l) = (int_of_value res_r)))
                                 | "<>" -> Value(int_of_bool ((int_of_value res_l) <> (int_of_value res_r)))
@@ -817,12 +820,11 @@ let primes_syntax_tree = ast_ize_P primes_parse_tree;;
 let ecg_run prog inp = interpret (ast_ize_P (parse ecg_parse_table prog)) inp;;
 
 let main () =
-
-  
-(*  print_string (interpret sum_ave_syntax_tree "4 6"); 
+  print_string (ecg_run "read a read b" "3");
+ (* print_string (interpret primes_syntax_tree "10"); *)
     (* should print "10 5" *)
   print_newline ();
-  print_string (interpret primes_syntax_tree "10");
+  (* print_string (interpret primes_syntax_tree "10");
     (* should print "2 3 5 7 11 13 17 19 23 29" *)
   print_newline ();
   print_string (interpret sum_ave_syntax_tree "4 foo");
@@ -834,8 +836,8 @@ let main () =
   print_string (ecg_run "write foo" "");
     (* should print "foo: symbol not found" *)
   print_newline ();
-  print_string (ecg_run "read a read b" "3");
-    (* should print "unexpected end of input" *) *)
+  print_string (ecg_run "read a read b" "3"); *)
+    (* should print "unexpected end of input" *)
   print_newline ();;
 
 (* Execute function "main" iff run as a stand-alone program. *)
