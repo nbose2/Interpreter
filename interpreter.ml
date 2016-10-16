@@ -629,6 +629,13 @@ type value =    (* an integer or an error message *)
 | Value of int
 | Error of string;;
 
+let rec find_val key list = 
+  match list with
+  | hd::tl -> (match hd with
+                | (k,v) when k = key -> v
+                | _ -> find_val key tl)
+  | [] -> raise(Failure (key^": symbol not found"));;
+
 let int_of_value x = match x with
                      | Value(y) -> y
                      | _ -> raise(Failure "int_of_value: need value to use this function.");;
@@ -776,18 +783,7 @@ and interpret_expr (expr:ast_e) (mem:memory) : value =
   (* your code should replace the following line *)
   (* (Error("code not written yet"), mem)  *)
  match expr with
-  | AST_id(id) 
-      -> (try ignore (List.find (fun x -> match x with 
-                                        | (i,_) when  i = id -> true
-                                        | _ -> false) 
-                              mem);  let bind = (List.find (fun x -> match x with 
-                                                                      | (i,_) when  i = id -> true
-                                                                      | _ -> false) 
-                                          mem) in 
-                                          (match bind with
-                                          | (i,v) -> Value(v)
-                                          | _ -> raise (Failure "interpret_expr: cannot interpret erroneous tree"))
-        with _ -> raise(Failure (id^": symbol not found")))
+  | AST_id(id) -> Value(find_val id mem)
   | AST_num(num) -> Value(int_of_string num)
   | AST_binop(op, lhs, rhs) -> (let res_l = interpret_expr lhs mem in 
                                 let res_r = interpret_expr rhs mem in 
@@ -820,7 +816,7 @@ let primes_syntax_tree = ast_ize_P primes_parse_tree;;
 let ecg_run prog inp = interpret (ast_ize_P (parse ecg_parse_table prog)) inp;;
 
 let main () =
-  print_string (ecg_run "read a read b" "3");
+  print_string (ecg_run "write foo" "");
  (* print_string (interpret primes_syntax_tree "10"); *)
     (* should print "10 5" *)
   print_newline ();
