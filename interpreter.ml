@@ -663,6 +663,11 @@ type status =
 | Bad       (* run-time error *)
 | Done;;    (* failed check *)
 
+let is_numeric str =
+  let s = global_replace (Str.regexp "[0-9]") "" str in
+    match s with
+    | "" -> true
+    | _ -> false;;
 
 (* Input to a calculator program is just a sequence of numbers.  We use
    the standard Str library to split the single input string into
